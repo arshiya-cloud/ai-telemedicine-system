@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+motor
+python-dotenv
+passlib[bcrypt]
+python-jose
+razorpay
+httpx
+websockets
+python-multipart
