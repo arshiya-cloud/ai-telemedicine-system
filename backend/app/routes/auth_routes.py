@@ -28,6 +28,11 @@ async def register_doctor(
     email: str = Form(...),
     password: str = Form(...),
     specialization: str = Form(...),
+    available_days: str = Form(...),
+    start_time: str = Form(...),
+    end_time: str = Form(...),
+    slot_duration: int = Form(...),
+    consultation_fee: int = Form(...),
     license_doc: UploadFile = File(...)
 ):
     db = get_db()
@@ -45,6 +50,11 @@ async def register_doctor(
         "password": get_password_hash(password),
         "role": "doctor",
         "specialization": specialization,
+        "available_days": available_days,
+        "start_time": start_time,
+        "end_time": end_time,
+        "slot_duration": slot_duration,
+        "consultation_fee": consultation_fee,
         "license_doc": doc_path,
         "status": "pending"  # Needs admin approval
     }

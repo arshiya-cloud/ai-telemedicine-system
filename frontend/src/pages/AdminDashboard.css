@@ -1,0 +1,249 @@
+.admin-dashboard-container {
+    display: flex;
+    height: 100vh;
+    background-color: transparent;
+    font-family: 'Inter', Arial, sans-serif;
+    overflow: hidden;
+    color: #333;
+    text-shadow: none;
+}
+
+.admin-sidebar {
+    width: 260px;
+    background-color: #FFFFFF;
+    border-right: 1px solid rgba(0, 123, 255, 0.1);
+    border-right: 1px solid rgba(226, 232, 240, 0.5);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+}
+
+.admin-sidebar-header {
+    padding: 24px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #0d6efd;
+    /* Soft blue */
+}
+
+.admin-sidebar-menu {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 0;
+}
+
+.admin-sidebar-item {
+    padding: 15px 20px;
+    cursor: pointer;
+    font-weight: 500;
+    color: #4a5568;
+    transition: all 0.2s ease;
+    border-left: 4px solid transparent;
+}
+
+.admin-sidebar-item:hover {
+    background-color: #F4F9FF;
+    color: #007BFF;
+}
+
+.admin-sidebar-item.active {
+    background-color: #007BFF20;
+    color: #007BFF;
+    border-left: 4px solid #007BFF;
+}
+
+.admin-sidebar-item.logout {
+    margin-top: auto;
+    color: #e53e3e;
+    border-top: 1px solid #e2e8f0;
+}
+
+.admin-sidebar-item.logout:hover {
+    background-color: #fff5f5;
+    color: #c53030;
+    border-left: 4px solid #e53e3e;
+}
+
+.admin-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.admin-header {
+    background-color: #FFFFFF;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    border-bottom: 1px solid rgba(0, 123, 255, 0.1);
+    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.05);
+}
+
+.admin-user-info {
+    font-weight: 600;
+    color: #333;
+}
+
+.admin-banner {
+    position: relative;
+    width: 100%;
+    height: 150px;
+    background: linear-gradient(to right, #007BFF, #0056B3);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 40px;
+}
+
+.admin-banner-overlay {
+    display: none;
+}
+
+.admin-banner-content {
+    position: relative;
+    z-index: 2;
+    color: #ffffff;
+}
+
+.admin-banner-title {
+    font-size: 2.5rem;
+    margin: 0 0 10px 0;
+}
+
+.admin-banner-subtitle {
+    font-size: 1.2rem;
+    margin: 0;
+    opacity: 0.9;
+}
+
+.admin-content-area {
+    padding: 30px 40px;
+}
+
+.admin-section-title {
+    font-size: 1.5rem;
+    color: #2d3748;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.doctor-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.doctor-card {
+    background-color: #FFFFFF;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 6px 18px rgba(0, 123, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+}
+
+.doctor-card-info {
+    margin-bottom: 15px;
+}
+
+.doctor-card-info h3 {
+    margin: 0 0 5px 0;
+    color: #2d3748;
+}
+
+.doctor-card-info p {
+    margin: 5px 0;
+    color: #718096;
+    font-size: 0.95rem;
+}
+
+.doctor-card-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: auto;
+}
+
+.btn-approve {
+    background-color: #28a745;
+    color: white;
+    flex: 1;
+    border-radius: 10px;
+}
+
+.btn-approve:hover {
+    background-color: #218838;
+}
+
+.btn-reject {
+    background-color: #dc3545;
+    color: white;
+    flex: 1;
+    border-radius: 10px;
+}
+
+.btn-reject:hover {
+    background-color: #c82333;
+}
+
+.btn-preview {
+    background-color: transparent;
+    border: 1px solid #007BFF;
+    color: #007BFF;
+    padding: 8px 10px;
+    border-radius: 10px;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 0.85rem;
+    margin-top: 10px;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.btn-preview:hover {
+    background-color: #007BFF20;
+}
+
+/* Responsiveness */
+@media (max-width: 768px) {
+    .admin-dashboard-container {
+        flex-direction: column;
+    }
+
+    .admin-sidebar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        border-right: none;
+        border-bottom: 1px solid #e2e8f0;
+        overflow-x: auto;
+    }
+
+    .admin-sidebar-header {
+        display: none;
+    }
+
+    .admin-sidebar-menu {
+        display: flex;
+        padding: 0;
+    }
+
+    .admin-sidebar-item {
+        padding: 15px;
+        white-space: nowrap;
+        border-left: none;
+        border-bottom: 4px solid transparent;
+    }
+
+    .admin-sidebar-item.active {
+        border-left: none;
+        border-bottom: 4px solid #007BFF;
+    }
+
+    .admin-sidebar-item.logout {
+        border-top: none;
+    }
+}

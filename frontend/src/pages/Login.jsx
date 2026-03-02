@@ -15,7 +15,11 @@ const Login = () => {
         try {
             const res = await api.post('/auth/login', { email, password });
             login(res.data);
-            navigate('/dashboard');
+            if (res.data.role === 'admin') {
+                navigate('/admin');
+            } else {
+                navigate('/dashboard');
+            }
         } catch (err) {
             setError(err.response?.data?.detail || 'Login failed');
         }
@@ -25,9 +29,9 @@ const Login = () => {
         <div className="card">
             <h2>Login</h2>
             {error && <p style={{ color: 'red' }}>{error}</p>}
-            <form onSubmit={handleSubmit}>
-                <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <form onSubmit={handleSubmit} autoComplete="off">
+                <input type="email" placeholder="enter your email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="off" />
+                <input type="password" placeholder="enter your password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" />
                 <button type="submit">Login</button>
             </form>
             <p>Don't have an account? <Link to="/register">Register here</Link></p>

@@ -1,0 +1,29 @@
+.payment-container {
+    padding: 20px;
+    margin: 0 auto;
+    max-width: 600px;
+}
+
+.payment-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.payment-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    cursor: pointer;
+    background: #fdfdfd;
+    transition: all 0.2s;
+}
+
+.payment-option:hover {
+    background: #f0f4f8;
+    border-color: #007bff28;
+}

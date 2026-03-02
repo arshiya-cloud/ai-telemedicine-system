@@ -14,6 +14,15 @@ async def get_pending_doctors(user: dict = Depends(require_role(["admin"]))):
         del doc["password"]
     return doctors
 
+@router.get("/approved-doctors")
+async def get_approved_doctors(user: dict = Depends(require_role(["admin"]))):
+    db = get_db()
+    doctors = await db.users.find({"role": "doctor", "status": "approved"}).to_list(100)
+    for doc in doctors:
+        doc["_id"] = str(doc["_id"])
+        del doc["password"]
+    return doctors
+
 @router.post("/approve-doctor/{doctor_id}")
 async def approve_doctor(doctor_id: str, user: dict = Depends(require_role(["admin"]))):
     db = get_db()

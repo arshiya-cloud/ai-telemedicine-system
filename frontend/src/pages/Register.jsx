@@ -8,11 +8,14 @@ const Register = () => {
         name: '', email: '', password: '', specialization: ''
     });
     const [file, setFile] = useState(null);
-    const [message, setMessage] = useState('');
+    const [successMsg, setSuccessMsg] = useState('');
+    const [errorMsg, setErrorMsg] = useState('');
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setErrorMsg('');
+        setSuccessMsg('');
         try {
             if (role === 'patient') {
                 await api.post('/auth/register/patient', {
@@ -29,29 +32,35 @@ const Register = () => {
 
                 await api.post('/auth/register/doctor', data);
             }
-            setMessage('Registration successful! Please login.');
+            setSuccessMsg('Registration successful! Please login.');
             setTimeout(() => navigate('/login'), 2000);
         } catch (err) {
-            setMessage(err.response?.data?.detail || 'Registration failed');
+            const detail = err.response?.data?.detail;
+            if (Array.isArray(detail)) {
+                setErrorMsg(detail[0].msg || 'Validation error');
+            } else {
+                setErrorMsg(detail || 'Registration failed. Please try again.');
+            }
         }
     };
 
     return (
         <div className="card">
             <h2>Register</h2>
-            {message && <p style={{ color: message.includes('failed') ? 'red' : 'green' }}>{message}</p>}
+            {successMsg && <p style={{ color: 'green' }}>{successMsg}</p>}
+            {errorMsg && <p style={{ color: 'red' }}>{errorMsg}</p>}
             <select value={role} onChange={e => setRole(e.target.value)}>
                 <option value="patient">Patient</option>
                 <option value="doctor">Doctor</option>
             </select>
-            <form onSubmit={handleSubmit}>
-                <input type="text" placeholder="Name" required onChange={e => setFormData({ ...formData, name: e.target.value })} />
-                <input type="email" placeholder="Email" required onChange={e => setFormData({ ...formData, email: e.target.value })} />
-                <input type="password" placeholder="Password" required onChange={e => setFormData({ ...formData, password: e.target.value })} />
+            <form onSubmit={handleSubmit} autoComplete="off">
+                <input type="text" placeholder="enter your name" required onChange={e => setFormData({ ...formData, name: e.target.value })} autoComplete="off" />
+                <input type="email" placeholder="enter your email" required onChange={e => setFormData({ ...formData, email: e.target.value })} autoComplete="off" />
+                <input type="password" placeholder="enter your password" required onChange={e => setFormData({ ...formData, password: e.target.value })} autoComplete="new-password" />
 
                 {role === 'doctor' && (
                     <>
-                        <input type="text" placeholder="Specialization" required onChange={e => setFormData({ ...formData, specialization: e.target.value })} />
+                        <input type="text" placeholder="enter your specialization" required onChange={e => setFormData({ ...formData, specialization: e.target.value })} autoComplete="off" />
                         <label>License Document:</label>
                         <input type="file" required onChange={e => setFile(e.target.files[0])} />
                     </>

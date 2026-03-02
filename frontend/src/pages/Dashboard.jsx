@@ -9,13 +9,25 @@ const Dashboard = () => {
     const [data, setData] = useState([]);
     const [appointments, setAppointments] = useState([]);
     const [newSlot, setNewSlot] = useState({ date: '', start_time: '' });
+    const [specializations, setSpecializations] = useState([]);
+    const [selectedSpec, setSelectedSpec] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
         if (user.role === 'admin') fetchPendingDoctors();
         if (user.role === 'doctor') { fetchSlots(); fetchDoctorAppointments(); }
-        if (user.role === 'patient') { fetchApprovedDoctors(); fetchMyAppointments(); }
+        if (user.role === 'patient') {
+            fetchApprovedDoctors();
+            fetchMyAppointments();
+            fetchSpecializations();
+        }
     }, [user.role]);
+
+    useEffect(() => {
+        if (user.role === 'patient') {
+            fetchApprovedDoctors();
+        }
+    }, [selectedSpec]);
 
     const fetchPendingDoctors = async () => {
         const res = await api.get('/admin/pending-doctors');
@@ -39,46 +51,28 @@ const Dashboard = () => {
         fetchSlots();
     };
 
-    const [selectedDoctor, setSelectedDoctor] = useState(null);
-    const [slots, setSlots] = useState([]);
     const fetchApprovedDoctors = async () => {
-        const res = await api.get('/patient/doctors');
+        const query = selectedSpec ? `?specialization=${selectedSpec}` : '';
+        const res = await api.get(`/patient/doctors${query}`);
         setData(res.data);
     };
+
+    const fetchSpecializations = async () => {
+        try {
+            const res = await api.get('/patient/doctors/specializations');
+            setSpecializations(res.data);
+        } catch (err) {
+            console.error('Could not fetch specializations', err);
+        }
+    };
+
     const fetchMyAppointments = async () => {
         const res = await api.get('/appointments/my-appointments');
         setAppointments(res.data);
     };
-    const viewSlots = async (docId) => {
-        setSelectedDoctor(docId);
-        const res = await api.get(`/appointments/slots/${docId}`);
-        setSlots(res.data);
-    };
 
     // For review
     const [review, setReview] = useState({ rating: 5, comment: '', appointment_id: '' });
-
-    const bookAndPay = async (slotId) => {
-        try {
-            const resBook = await api.post('/appointments/book', { slot_id: slotId });
-            const appointmentId = resBook.data.appointment_id;
-
-            const resOrder = await api.post('/payment/create-order', { appointment_id: appointmentId, amount: 500 });
-
-            alert('Mock Razorpay Popup: Payment Successful');
-
-            await api.post('/payment/verify', {
-                razorpay_order_id: resOrder.data.order_id,
-                razorpay_payment_id: 'pay_mock_' + Math.random(),
-                razorpay_signature: 'sign_mock_' + Math.random(),
-                appointment_id: appointmentId
-            });
-            alert('Appointment Confirmed!');
-            fetchMyAppointments();
-        } catch (err) {
-            alert(err.response?.data?.detail || 'Booking/Payment failed');
-        }
-    };
 
     const submitReview = async () => {
         try {
@@ -98,24 +92,30 @@ const Dashboard = () => {
                     {user.role === 'patient' && (
                         <div>
                             <div className="dashboard-card">
-                                <h3>Available Doctors</h3>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <h3>Available Doctors</h3>
+                                    <select
+                                        value={selectedSpec}
+                                        onChange={(e) => setSelectedSpec(e.target.value)}
+                                        style={{ width: 'auto', padding: '5px 10px' }}
+                                    >
+                                        <option value="">All Specializations</option>
+                                        {specializations.map(spec => (
+                                            <option key={spec} value={spec}>{spec}</option>
+                                        ))}
+                                    </select>
+                                </div>
                                 {data.map(doc => (
-                                    <div key={doc._id} style={{ borderBottom: '1px solid #eee', padding: '10px 0' }}>
-                                        <h4>{doc.name} - {doc.specialization}</h4>
-                                        <button onClick={() => viewSlots(doc._id)} style={{ width: 'auto' }}>View Slots</button>
+                                    <div key={doc._id} style={{ borderBottom: '1px solid #eee', padding: '10px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div>
+                                            <h4 style={{ margin: '0 0 5px 0' }}>{doc.name}</h4>
+                                            <span style={{ color: '#666', fontSize: '0.9rem' }}>{doc.specialization} • ₹{doc.consultation_fee || 500}</span>
+                                        </div>
+                                        <button onClick={() => navigate(`/doctor/${doc._id}/book`)} style={{ width: 'auto', margin: 0 }}>Book Slot</button>
                                     </div>
                                 ))}
+                                {data.length === 0 && <p>No doctors found matching this specialization.</p>}
                             </div>
-                            {selectedDoctor && (
-                                <div className="dashboard-card">
-                                    <h3>Available Slots</h3>
-                                    {slots.length === 0 ? <p>No slots.</p> : slots.map(s => (
-                                        <div key={s._id} style={{ display: 'inline-block', margin: '5px' }}>
-                                            <button onClick={() => bookAndPay(s._id)} style={{ width: 'auto' }}>{s.date} {s.start_time}</button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
                             <div className="dashboard-card">
                                 <h3>My Appointments</h3>
                                 {appointments.map(a => (

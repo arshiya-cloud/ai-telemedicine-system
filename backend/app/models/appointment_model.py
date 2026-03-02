@@ -14,4 +14,10 @@ class SlotResponse(BaseModel):
     status: str
 
 class AppointmentCreate(BaseModel):
-    slot_id: str
+    doctor_id: str
+    date: str
+    start_time: str
+    patient_name: str
+    age: int
+    symptoms: str
+    notes: Optional[str] = None

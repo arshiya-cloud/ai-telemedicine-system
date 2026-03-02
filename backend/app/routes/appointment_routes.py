@@ -16,30 +16,42 @@ async def get_available_slots(doctor_id: str):
         s["_id"] = str(s["_id"])
     return slots
 
-@router.post("/book")
+@router.post("")
 async def book_appointment(appt: AppointmentCreate, user: dict = Depends(require_role(["patient"]))):
     db = get_db()
-    slot = await db.slots.find_one({"_id": ObjectId(appt.slot_id)})
-    if not slot:
-        raise HTTPException(status_code=404, detail="Slot not found")
-        
-    doctor_id = slot["doctor_id"]
     
-    success = await book_slot(appt.slot_id)
-    if not success:
-        raise HTTPException(status_code=400, detail="Slot is no longer available")
-        
+    # Verify the doctor exists
+    doctor = await db.users.find_one({"_id": ObjectId(appt.doctor_id), "role": "doctor"})
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+
     new_appt = {
-        "slot_id": appt.slot_id,
-        "doctor_id": doctor_id,
+        "doctor_id": appt.doctor_id,
         "patient_id": user["user_id"],
-        "status": "pending_payment",
-        "date": slot["date"],
-        "start_time": slot["start_time"]
+        "date": appt.date,
+        "start_time": appt.start_time,
+        "patient_name": appt.patient_name,
+        "age": appt.age,
+        "symptoms": appt.symptoms,
+        "notes": appt.notes,
+        "status": "confirmed" # The frontend handles payment mock before calling this
     }
     
-    res = await db.appointments.insert_one(new_appt)
-    return {"message": "Appointment pending payment", "appointment_id": str(res.inserted_id)}
+    # Atomic operation to prevent double booking
+    result = await db.appointments.update_one(
+        {
+            "doctor_id": appt.doctor_id,
+            "date": appt.date,
+            "start_time": appt.start_time
+        },
+        {"$setOnInsert": new_appt},
+        upsert=True
+    )
+    
+    if result.upserted_id is None:
+        raise HTTPException(status_code=400, detail="Slot is no longer available or already booked")
+        
+    return {"message": "Appointment confirmed successfully", "appointment_id": str(result.upserted_id)}
 
 @router.get("/my-appointments")
 async def my_appointments(user: dict = Depends(require_role(["patient"]))):
