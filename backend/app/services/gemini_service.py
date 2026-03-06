@@ -7,30 +7,39 @@ load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 ALLOWED_DEPARTMENTS = [
-    "Cardiology", "Dermatology", "Orthopedics", 
-    "Neurology", "General Medicine", "Psychiatry", "Pediatrics"
+    "General Physician", "Cardiologist", "Orthopedic Doctor", 
+    "Dermatologist", "Neurologist", "ENT Specialist", "Gastroenterologist"
 ]
 
-async def analyze_with_gemini(message: str) -> str:
+async def analyze_with_gemini(message: str) -> dict:
+    default_response = {
+        "response_text": "I understand you are feeling unwell. Based on your symptoms, we recommend consulting a doctor.",
+        "recommended_specialist": "General Physician"
+    }
+
     if not GEMINI_API_KEY or GEMINI_API_KEY == "your_gemini_api_key":
-        return "General Medicine"
+        return default_response
         
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
     
     prompt = f"""
-    You are a medical triage assistant. Analyze this symptom: "{message}".
-    Determine the most appropriate department from this list ONLY:
-    {', '.join(ALLOWED_DEPARTMENTS)}.
+    You are an empathetic and professional medical triage assistant.
+    Analyze the patient's message: "{message}".
+    
+    1. Provide a brief, comforting, and informative response explaining possible common reasons for their symptom or general advice. Provide basic first aid suggestions and temporary relief methods if applicable. Explain when to see a doctor. (DO NOT diagnose or prescribe medicine).
+    2. Suggest the most appropriate department for a checkup from this list ONLY: {', '.join(ALLOWED_DEPARTMENTS)}.
+    
     Return ONLY a valid JSON object in this exact format, with no markdown:
     {{
-        "department": "department_name"
+        "response_text": "your comforting, informative response here",
+        "recommended_specialist": "specialist_name"
     }}
     """
     
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
-            "temperature": 0.1
+            "temperature": 0.4
         }
     }
     
@@ -43,12 +52,17 @@ async def analyze_with_gemini(message: str) -> str:
                 text = text.replace('```json', '').replace('```', '')
                 try:
                     parsed = json.loads(text)
-                    dept = parsed.get("department")
-                    if dept in ALLOWED_DEPARTMENTS:
-                        return dept
+                    spec = parsed.get("recommended_specialist", "General Physician")
+                    advice = parsed.get("response_text", default_response["response_text"])
+                    if spec not in ALLOWED_DEPARTMENTS:
+                        spec = "General Physician"
+                    return {
+                        "response_text": advice,
+                        "recommended_specialist": spec
+                    }
                 except:
                     pass
     except Exception as e:
         print(f"Gemini error: {e}")
         
-    return "General Medicine"
+    return default_response

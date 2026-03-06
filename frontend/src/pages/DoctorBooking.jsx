@@ -15,6 +15,7 @@ const DoctorBooking = () => {
     const [selectedSlot, setSelectedSlot] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [reviews, setReviews] = useState({ average_rating: 0, reviews: [] });
 
     // Patient details form
     const [patientDetails, setPatientDetails] = useState({
@@ -26,6 +27,7 @@ const DoctorBooking = () => {
 
     useEffect(() => {
         fetchDoctor();
+        fetchReviews();
         // Today's date as default
         const today = new Date().toISOString().split('T')[0];
         setDate(today);
@@ -41,14 +43,19 @@ const DoctorBooking = () => {
         try {
             const res = await api.get(`/patient/doctor/${doctorId}`);
             setDoctor(res.data);
-
-            // To fulfill the "Patient name autofilled" requirement without modifying Auth context drastically,
-            // we could attempt to fetch the actual patient profile, but the MVP approach is to just let them type it,
-            // or prefill with "Patient" if empty. We'll leave it empty to force proper typing.
             setLoading(false);
         } catch (err) {
             setError(err.response?.data?.detail || 'Failed to load doctor profile.');
             setLoading(false);
+        }
+    };
+
+    const fetchReviews = async () => {
+        try {
+            const res = await api.get(`/appointments/reviews/${doctorId}`);
+            setReviews(res.data);
+        } catch (err) {
+            console.error(err);
         }
     };
 
@@ -101,6 +108,18 @@ const DoctorBooking = () => {
                         <p><strong>Specialization:</strong> {doctor.specialization}</p>
                         <p><strong>Consultation Fee:</strong> ₹{doctor.consultation_fee || 500}</p>
                         <p><strong>Available Days:</strong> {doctor.available_days || 'Not specified'}</p>
+                        <hr style={{ margin: '15px 0' }} />
+                        <p><strong>Rating:</strong> {reviews.average_rating} ⭐ ({reviews.reviews.length} reviews)</p>
+                    </div>
+
+                    <div className="card" style={{ margin: '0 0 20px 0', maxWidth: '100%', maxHeight: '300px', overflowY: 'auto' }}>
+                        <h3>Patient Feedback</h3>
+                        {reviews.reviews.length === 0 ? <p>No reviews yet.</p> : reviews.reviews.map((r, idx) => (
+                            <div key={idx} style={{ borderBottom: '1px solid #ccc', padding: '10px 0' }}>
+                                <p style={{ margin: '0 0 5px 0' }}><strong>{r.rating} ⭐</strong></p>
+                                <p style={{ margin: 0, fontStyle: 'italic', color: '#555' }}>"{r.comment}"</p>
+                            </div>
+                        ))}
                     </div>
 
                     <div className="card" style={{ margin: 0, maxWidth: '100%' }}>

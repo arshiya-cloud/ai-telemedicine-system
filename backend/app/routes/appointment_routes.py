@@ -25,11 +25,19 @@ async def book_appointment(appt: AppointmentCreate, user: dict = Depends(require
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor not found")
 
+    # Calculate end time
+    from datetime import datetime, timedelta
+    start_dt = datetime.strptime(f"{appt.date} {appt.start_time}", "%Y-%m-%d %H:%M")
+    slot_duration = doctor.get("slot_duration", 30)
+    end_dt = start_dt + timedelta(minutes=slot_duration)
+    end_time_str = end_dt.strftime("%H:%M")
+
     new_appt = {
         "doctor_id": appt.doctor_id,
         "patient_id": user["user_id"],
         "date": appt.date,
         "start_time": appt.start_time,
+        "end_time": end_time_str,
         "patient_name": appt.patient_name,
         "age": appt.age,
         "symptoms": appt.symptoms,
@@ -60,6 +68,15 @@ async def my_appointments(user: dict = Depends(require_role(["patient"]))):
     for a in appts:
         a["_id"] = str(a["_id"])
     return appts
+
+@router.get("/{appointment_id}")
+async def get_appointment(appointment_id: str):
+    db = get_db()
+    appt = await db.appointments.find_one({"_id": ObjectId(appointment_id)})
+    if not appt:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    appt["_id"] = str(appt["_id"])
+    return appt
 
 @router.post("/review")
 async def add_review(review: ReviewCreate, user: dict = Depends(require_role(["patient"]))):

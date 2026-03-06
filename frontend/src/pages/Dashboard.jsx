@@ -86,7 +86,7 @@ const Dashboard = () => {
 
     return (
         <div>
-            <h2>Welcome to Dashboard ({user.role})</h2>
+            <h2>Welcome to Dashboard, {user?.name} ({user.role})</h2>
             <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                 <div style={{ flex: 2 }}>
                     {user.role === 'patient' && (
@@ -191,7 +191,7 @@ const Dashboard = () => {
                 </div>
                 {user.role === 'patient' && (
                     <div style={{ flex: 1 }}>
-                        <AiChatbot />
+                        <AiChatbot onRecommendSpecialist={setSelectedSpec} />
                     </div>
                 )}
             </div>

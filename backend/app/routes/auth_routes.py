@@ -28,11 +28,11 @@ async def register_doctor(
     email: str = Form(...),
     password: str = Form(...),
     specialization: str = Form(...),
-    available_days: str = Form(...),
-    start_time: str = Form(...),
-    end_time: str = Form(...),
-    slot_duration: int = Form(...),
-    consultation_fee: int = Form(...),
+    available_days: str = Form("Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday"),
+    start_time: str = Form("09:00"),
+    end_time: str = Form("17:00"),
+    slot_duration: int = Form(30),
+    consultation_fee: int = Form(500),
     license_doc: UploadFile = File(...)
 ):
     db = get_db()
@@ -40,7 +40,8 @@ async def register_doctor(
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
         
-    doc_path = os.path.join(UPLOAD_DIR, license_doc.filename)
+    # Use forward slash to ensure consistent and valid URLs when saved to DB
+    doc_path = f"{UPLOAD_DIR}/{license_doc.filename}"
     with open(doc_path, "wb") as f:
         f.write(await license_doc.read())
         
@@ -75,4 +76,4 @@ async def login(user: UserLogin):
     access_token = create_access_token(
         data={"user_id": str(db_user["_id"]), "role": db_user["role"]}
     )
-    return {"access_token": access_token, "token_type": "bearer", "role": db_user["role"], "user_id": str(db_user["_id"])}
+    return {"access_token": access_token, "token_type": "bearer", "role": db_user["role"], "user_id": str(db_user["_id"]), "name": db_user.get("name", "User")}

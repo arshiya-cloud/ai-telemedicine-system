@@ -34,6 +34,7 @@ async def websocket_endpoint(websocket: WebSocket, appointment_id: str):
     db = get_db()
     
     # send chat history
+    from bson import ObjectId
     try:
         past_chats = await db.chats.find({"appointment_id": appointment_id}).to_list(100)
         for chat in past_chats:
@@ -43,7 +44,26 @@ async def websocket_endpoint(websocket: WebSocket, appointment_id: str):
         while True:
             data = await websocket.receive_text()
             try:
+                # Check timeframe before sending
+                appt = await db.appointments.find_one({"_id": ObjectId(appointment_id)})
+                if appt:
+                    now = datetime.now()
+                    start_dt = datetime.strptime(f"{appt['date']} {appt['start_time']}", "%Y-%m-%d %H:%M")
+                    if appt.get("end_time"):
+                        end_dt = datetime.strptime(f"{appt['date']} {appt['end_time']}", "%Y-%m-%d %H:%M")
+                    else:
+                        from datetime import timedelta
+                        end_dt = start_dt + timedelta(minutes=30)
+                        
+                    if not (start_dt <= now <= end_dt):
+                        await websocket.send_text(json.dumps({"error": "Communication is only allowed during the appointment window."}))
+                        continue
+
                 payload = json.loads(data)
+                
+                if payload.get("type") in ["offer", "answer", "ice-candidate", "end-call"]:
+                    await manager.broadcast_to_room(data, appointment_id)
+                    continue
                 
                 chat_msg = {
                     "appointment_id": appointment_id,
@@ -57,6 +77,8 @@ async def websocket_endpoint(websocket: WebSocket, appointment_id: str):
                 await manager.broadcast_to_room(json.dumps(chat_msg), appointment_id)
             except json.JSONDecodeError:
                 pass
+            except Exception as e:
+                print("WS Error:", e)
     except WebSocketDisconnect:
         manager.disconnect(websocket, appointment_id)
 
@@ -67,4 +89,4 @@ class ChatbotRequest(BaseModel):
 @router.post("/chatbot")
 async def chatbot_endpoint(request: ChatbotRequest):
     response = await process_patient_message(request.message)
-    return {"reply": response}
+    return response

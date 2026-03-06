@@ -118,3 +118,13 @@ button:hover {
     background-color: #f8d7da;
     margin-right: auto;
 }
+
+.system-message {
+    background-color: #e2e3e5;
+    color: #383d41;
+    margin: 10px auto;
+    text-align: center;
+    font-size: 0.9em;
+    font-style: italic;
+    width: 90%;
+}

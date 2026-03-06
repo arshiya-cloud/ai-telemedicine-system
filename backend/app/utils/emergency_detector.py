@@ -1,5 +1,5 @@
 EMERGENCY_KEYWORDS = [
-    "unconscious", "severe bleeding", "heart attack", "suicide", "difficulty breathing"
+    "chest pain", "severe bleeding", "breathing difficulty", "unconsciousness", "stroke symptoms"
 ]
 
 def check_emergency(message: str) -> bool:
@@ -9,5 +9,8 @@ def check_emergency(message: str) -> bool:
             return True
     return False
 
-def get_emergency_response() -> str:
-    return "Please immediately contact the hospital emergency department."
+def get_emergency_response() -> dict:
+    return {
+        "response_text": "EMERGENCY WARNING: Please seek immediate medical care at the nearest hospital or call an ambulance. This system cannot handle emergencies.",
+        "recommended_specialist": "Emergency Room"
+    }
