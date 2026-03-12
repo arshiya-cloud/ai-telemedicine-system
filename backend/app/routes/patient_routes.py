@@ -13,7 +13,7 @@ async def get_approved_doctors(specialization: Optional[str] = None, user: dict 
     db = get_db()
     query = {"role": "doctor", "status": "approved"}
     if specialization:
-        query["specialization"] = specialization.strip().lower()
+        query["specialization"] = {"$regex": specialization, "$options": "i"}
         
     doctors = await db.users.find(query).to_list(100)
     for doc in doctors:
@@ -30,7 +30,7 @@ async def get_specializations(user: dict = Depends(get_current_user)):
         if s:
             unique_specs.add(s.strip().lower())
     
-    return [{"value": s, "display": s.title()} for s in unique_specs]
+    return sorted(list(unique_specs))
 
 @router.get("/doctor/{doctor_id}")
 async def get_doctor_profile(doctor_id: str, user: dict = Depends(get_current_user)):

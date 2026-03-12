@@ -45,12 +45,16 @@ async def register_doctor(
     with open(doc_path, "wb") as f:
         f.write(await license_doc.read())
         
+    spec = specialization.strip().lower()
+    if spec in ["general", "general medcine"]:
+        spec = "general medicine"
+        
     user_dict = {
         "name": name,
         "email": email,
         "password": get_password_hash(password),
         "role": "doctor",
-        "specialization": specialization.strip().lower(),
+        "specialization": spec,
         "available_days": available_days,
         "start_time": start_time,
         "end_time": end_time,

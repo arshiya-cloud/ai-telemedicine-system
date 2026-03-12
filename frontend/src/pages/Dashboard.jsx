@@ -117,9 +117,11 @@ const Dashboard = () => {
                                         style={{ width: 'auto', padding: '5px 10px' }}
                                     >
                                         <option value="">All Specializations</option>
-                                        {specializations.map(spec => (
-                                            <option key={spec.value || spec} value={spec.value || spec}>{spec.display || spec}</option>
-                                        ))}
+                                        {specializations.map(spec => {
+                                            let displaySpec = String(spec).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                                            if (String(spec).toLowerCase() === 'ent') displaySpec = 'ENT';
+                                            return <option key={spec} value={spec}>{displaySpec}</option>;
+                                        })}
                                     </select>
                                 </div>
                                 {data.map(doc => (
