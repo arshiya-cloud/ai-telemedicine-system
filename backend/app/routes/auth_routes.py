@@ -50,7 +50,7 @@ async def register_doctor(
         "email": email,
         "password": get_password_hash(password),
         "role": "doctor",
-        "specialization": specialization,
+        "specialization": specialization.strip().lower(),
         "available_days": available_days,
         "start_time": start_time,
         "end_time": end_time,

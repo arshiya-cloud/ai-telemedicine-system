@@ -20,6 +20,20 @@ async def add_slot(slot: SlotCreate, user: dict = Depends(require_role(["doctor"
     
     return {"message": "Slot created successfully", "id": slot_id}
 
+@router.delete("/slots/{slot_id}")
+async def delete_slot(slot_id: str, user: dict = Depends(require_role(["doctor"]))):
+    db = get_db()
+    # Check if slot exists and belongs to doctor
+    slot = await db.slots.find_one({"_id": ObjectId(slot_id), "doctor_id": user["user_id"]})
+    if not slot:
+        raise HTTPException(status_code=404, detail="Slot not found")
+        
+    if slot.get("status") == "booked":
+        raise HTTPException(status_code=400, detail="Cannot delete a booked slot")
+        
+    await db.slots.delete_one({"_id": ObjectId(slot_id)})
+    return {"message": "Slot deleted successfully"}
+
 @router.get("/slots")
 async def get_doctor_slots(user: dict = Depends(require_role(["doctor"]))):
     db = get_db()

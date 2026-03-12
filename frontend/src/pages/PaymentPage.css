@@ -27,3 +27,11 @@
     background: #f0f4f8;
     border-color: #007bff28;
 }
+
+.payment-option input[type="radio"] {
+    margin: 0;
+    width: auto;
+    height: auto;
+    cursor: pointer;
+    vertical-align: middle;
+}

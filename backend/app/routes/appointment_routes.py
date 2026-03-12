@@ -28,9 +28,19 @@ async def book_appointment(appt: AppointmentCreate, user: dict = Depends(require
     # Calculate end time
     from datetime import datetime, timedelta
     start_dt = datetime.strptime(f"{appt.date} {appt.start_time}", "%Y-%m-%d %H:%M")
-    slot_duration = doctor.get("slot_duration", 30)
-    end_dt = start_dt + timedelta(minutes=slot_duration)
+    slot_duration = doctor.get("slot_duration", 30) or 30
+    end_dt = start_dt + timedelta(minutes=int(slot_duration))
     end_time_str = end_dt.strftime("%H:%M")
+
+    # Prevent double booking using find_one
+    existing_appt = await db.appointments.find_one({
+        "doctor_id": appt.doctor_id,
+        "date": appt.date,
+        "start_time": appt.start_time
+    })
+    
+    if existing_appt:
+        raise HTTPException(status_code=400, detail="Slot is no longer available or already booked")
 
     new_appt = {
         "doctor_id": appt.doctor_id,
@@ -39,27 +49,21 @@ async def book_appointment(appt: AppointmentCreate, user: dict = Depends(require
         "start_time": appt.start_time,
         "end_time": end_time_str,
         "patient_name": appt.patient_name,
-        "age": appt.age,
+        "age": int(appt.age),
         "symptoms": appt.symptoms,
-        "notes": appt.notes,
+        "notes": appt.notes or "",
         "status": "confirmed" # The frontend handles payment mock before calling this
     }
     
-    # Atomic operation to prevent double booking
-    result = await db.appointments.update_one(
-        {
-            "doctor_id": appt.doctor_id,
-            "date": appt.date,
-            "start_time": appt.start_time
-        },
-        {"$setOnInsert": new_appt},
-        upsert=True
+    result = await db.appointments.insert_one(new_appt)
+    
+    # If the doctor manually created this slot in db.slots, mark it as booked
+    await db.slots.update_many(
+        {"doctor_id": appt.doctor_id, "date": appt.date, "start_time": appt.start_time},
+        {"$set": {"status": "booked"}}
     )
     
-    if result.upserted_id is None:
-        raise HTTPException(status_code=400, detail="Slot is no longer available or already booked")
-        
-    return {"message": "Appointment confirmed successfully", "appointment_id": str(result.upserted_id)}
+    return {"message": "Appointment confirmed successfully", "appointment_id": str(result.inserted_id)}
 
 @router.get("/my-appointments")
 async def my_appointments(user: dict = Depends(require_role(["patient"]))):
@@ -77,6 +81,26 @@ async def get_appointment(appointment_id: str):
         raise HTTPException(status_code=404, detail="Appointment not found")
     appt["_id"] = str(appt["_id"])
     return appt
+
+@router.put("/{appointment_id}/end")
+async def end_appointment(appointment_id: str, user: dict = Depends(require_role(["patient", "doctor"]))):
+    db = get_db()
+    appt = await db.appointments.find_one({"_id": ObjectId(appointment_id)})
+    if not appt:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+        
+    if appt["patient_id"] != user["user_id"] and appt["doctor_id"] != user["user_id"]:
+        raise HTTPException(status_code=403, detail="Not authorized to end this appointment")
+        
+    from datetime import datetime
+    now_str = datetime.now().strftime("%H:%M")
+    
+    await db.appointments.update_one(
+        {"_id": ObjectId(appointment_id)},
+        {"$set": {"status": "completed", "end_time": now_str}}
+    )
+    
+    return {"message": "Appointment ended successfully", "end_time": now_str}
 
 @router.post("/review")
 async def add_review(review: ReviewCreate, user: dict = Depends(require_role(["patient"]))):

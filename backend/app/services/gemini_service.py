@@ -24,14 +24,17 @@ async def analyze_with_gemini(message: str) -> dict:
     
     prompt = f"""
     You are an empathetic and professional medical triage assistant.
-    Analyze the patient's message: "{message}".
+    Analyze the patient's symptoms: "{message}".
     
-    1. Provide a brief, comforting, and informative response explaining possible common reasons for their symptom or general advice. Provide basic first aid suggestions and temporary relief methods if applicable. Explain when to see a doctor. (DO NOT diagnose or prescribe medicine).
-    2. Suggest the most appropriate department for a checkup from this list ONLY: {', '.join(ALLOWED_DEPARTMENTS)}.
+    1. Provide brief general care advice. Provide basic temporary relief suggestions if applicable.
+    2. Suggest the most appropriate doctor specialization based on symptoms from this list ONLY: {', '.join(ALLOWED_DEPARTMENTS)}. Do not always default to "General Physician".
+       Keep the "no-diagnosis" rule: NO diagnosis statements like "You have eczema" or "You likely have diabetes".
+       Allowed format: "These symptoms can sometimes relate to skin conditions. For proper evaluation, consider consulting a dermatologist."
+       If an appropriate specialist is found, specify it. Otherwise, suggest "General Physician".
     
     Return ONLY a valid JSON object in this exact format, with no markdown:
     {{
-        "response_text": "your comforting, informative response here",
+        "response_text": "your general advice and doctor suggestion here",
         "recommended_specialist": "specialist_name"
     }}
     """

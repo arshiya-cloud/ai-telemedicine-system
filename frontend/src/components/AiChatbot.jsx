@@ -8,7 +8,7 @@ const AiChatbot = ({ onRecommendSpecialist }) => {
     const sendMsg = async () => {
         if (!input) return;
         const newMsgs = [...messages, { sender: 'user', text: input }];
-        setMessages(newMsgs);
+        setMessages([...newMsgs, { sender: 'bot', loading: true }]);
         setInput('');
         try {
             const res = await api.post('/chat/chatbot', { message: input });
@@ -21,13 +21,41 @@ const AiChatbot = ({ onRecommendSpecialist }) => {
         }
     };
 
+    const dotsStyle = `
+    @keyframes blink {
+        0% { opacity: .2; }
+        20% { opacity: 1; }
+        100% { opacity: .2; }
+    }
+    .loading-dots span {
+        animation-name: blink;
+        animation-duration: 1.4s;
+        animation-iteration-count: infinite;
+        animation-fill-mode: both;
+        font-size: 1.2rem;
+        margin: 0 2px;
+    }
+    .loading-dots span:nth-child(2) { animation-delay: .2s; }
+    .loading-dots span:nth-child(3) { animation-delay: .4s; }
+    `;
+
     return (
         <div className="dashboard-card" style={{ border: '1px solid #007bff' }}>
+            <style>{dotsStyle}</style>
             <h3>What's Worring You ?</h3>
             <div className="chat-box" style={{ height: '200px' }}>
                 {messages.map((m, i) => (
                     <div key={i} className={`chat-message ${m.sender === 'user' ? 'my-message' : 'other-message'}`}>
-                        {m.text}
+                        {m.loading ? (
+                            <div className="loading-indicator">
+                                <span style={{ fontSize: '0.8rem', color: '#666' }}>AI is typing</span><br/>
+                                <div className="loading-dots" style={{ display: 'inline-block' }}>
+                                    <span>●</span><span>●</span><span>●</span>
+                                </div>
+                            </div>
+                        ) : (
+                            m.text
+                        )}
                     </div>
                 ))}
             </div>

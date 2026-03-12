@@ -13,6 +13,19 @@ const Chat = () => {
     const [minsToStart, setMinsToStart] = useState(0);
 
     const [inCall, setInCall] = useState(false);
+
+    const handleEndSession = async () => {
+        if (!window.confirm("Are you sure you want to end this session?")) return;
+        try {
+            await api.put(`/appointments/${appointmentId}/end`);
+            const nowStr = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            setAppt(prev => ({ ...prev, end_time: nowStr, status: 'completed' }));
+            setStatus('after');
+        } catch (err) {
+            console.error("Failed to end session", err);
+            alert("Failed to end session");
+        }
+    };
     const [callType, setCallType] = useState(null);
     const localVideoRef = useRef(null);
     const remoteVideoRef = useRef(null);
@@ -30,13 +43,35 @@ const Chat = () => {
                 setStatus('error');
             }
         };
+        const fetchHistory = async () => {
+            try {
+                const res = await api.get(`/chat/history/${appointmentId}`);
+                setMessages(prev => {
+                    const newMessages = res.data.filter(m => !prev.find(pm => pm._id === m._id));
+                    return [...prev, ...newMessages];
+                });
+            } catch (err) {
+                console.error("Failed to fetch chat history", err);
+            }
+        };
         fetchAppt();
+        fetchHistory();
     }, [appointmentId]);
+
+    useEffect(() => {
+        if (status === 'after' && appt && appt.status !== 'completed' && user.role === 'patient') {
+            api.put(`/appointments/${appointmentId}/end`).catch(console.error);
+        }
+    }, [status, appt, appointmentId, user.role]);
 
     useEffect(() => {
         if (!appt) return;
 
         const checkTime = () => {
+            if (appt.status === 'completed') {
+                setStatus('after');
+                return;
+            }
             const now = new Date();
             const start = new Date(`${appt.date}T${appt.start_time}`);
             let endStr = appt.end_time;
@@ -215,6 +250,12 @@ const Chat = () => {
         }
     };
 
+    const viewPDF = (e, url) => {
+        e.preventDefault();
+        const fixedUrl = url.replace(/\\/g, '/');
+        window.open(`http://localhost:8000/api/prescriptions/view?file_url=${fixedUrl}`, '_blank');
+    };
+
     const renderMessage = (msg) => {
         const text = msg.message;
         const rxPattern = /\[(.*?)\]\(\/(app\/uploads\/prescriptions\/.*?)\)/;
@@ -224,7 +265,7 @@ const Chat = () => {
             const url = match[2];
             return (
                 <span>
-                    A new prescription has been generated: <a href={`http://localhost:8000/${url}`} target="_blank" rel="noopener noreferrer" style={{ color: 'blue', textDecoration: 'underline' }}>{label}</a>
+                    A new prescription has been generated: <a href={`http://localhost:8000/${url}`} onClick={(e) => viewPDF(e, url)} style={{ color: 'blue', textDecoration: 'underline', cursor: 'pointer' }}>{label}</a>
                 </span>
             );
         }
@@ -274,9 +315,14 @@ const Chat = () => {
             <div className="card" style={{ maxWidth: inCall ? '900px' : '600px', margin: '0 auto', display: 'flex', flexDirection: 'column', height: '80vh', transition: 'all 0.3s' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2>Consultation Chat</h2>
-                    {user.role === 'doctor' && (
-                        <button onClick={() => setShowRxModal(true)} style={{ width: 'auto', background: '#e83e8c', padding: '5px 15px', fontSize: '14px' }}>Write Prescription</button>
-                    )}
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        {user.role === 'doctor' && (
+                            <button onClick={() => setShowRxModal(true)} style={{ width: 'auto', background: '#e83e8c', padding: '5px 15px', fontSize: '14px' }}>Write Prescription</button>
+                        )}
+                        {user.role === 'patient' && status === 'during' && (
+                            <button onClick={handleEndSession} style={{ width: 'auto', background: '#dc3545', color: '#fff', padding: '5px 15px', fontSize: '14px' }}>End Session</button>
+                        )}
+                    </div>
                 </div>
 
                 {status === 'before' && (
@@ -326,7 +372,7 @@ const Chat = () => {
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: '300px' }}>
                         {appt && appt.prescription_url && (
                             <div style={{ background: '#e2f0d9', padding: '10px', borderRadius: '5px', marginBottom: '10px', textAlign: 'center', fontWeight: 'bold' }}>
-                                A prescription has been generated: <a href={`http://localhost:8000/${appt.prescription_url}`} target="_blank" rel="noopener noreferrer" style={{ color: '#28a745', textDecoration: 'underline', marginLeft: '10px' }}>Download PDF</a>
+                                A prescription has been generated: <a href={`http://localhost:8000/${appt.prescription_url}`} onClick={(e) => viewPDF(e, appt.prescription_url)} style={{ color: '#28a745', textDecoration: 'underline', marginLeft: '10px', cursor: 'pointer' }}>View PDF</a>
                             </div>
                         )}
                         <div className="chat-box" style={{ flex: 1, overflowY: 'auto', marginBottom: '10px' }}>

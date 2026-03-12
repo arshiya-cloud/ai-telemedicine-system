@@ -36,6 +36,10 @@ const DoctorBooking = () => {
     useEffect(() => {
         if (date && doctor) {
             fetchSlots(date);
+            const interval = setInterval(() => {
+                fetchSlots(date, true);
+            }, 3000);
+            return () => clearInterval(interval);
         }
     }, [date, doctor]);
 
@@ -59,11 +63,19 @@ const DoctorBooking = () => {
         }
     };
 
-    const fetchSlots = async (selectedDate) => {
+    const fetchSlots = async (selectedDate, isPolling = false) => {
         try {
-            const res = await api.get(`/patient/doctor/${doctorId}/slots?date=${selectedDate}`);
+            const res = await api.get(`/patient/doctor/${doctorId}/slots?date=${selectedDate}&t=${new Date().getTime()}`);
             setSlots(res.data);
-            setSelectedSlot(null); // Reset choice on date change
+            if (!isPolling) {
+                setSelectedSlot(null); // Reset choice on explicit date change
+            } else {
+                setSelectedSlot(prev => {
+                    if (!prev) return null;
+                    const stillAvailable = res.data.find(s => s.start_time === prev.start_time && !s.is_booked);
+                    return stillAvailable ? prev : null;
+                });
+            }
         } catch (err) {
             console.error(err);
         }

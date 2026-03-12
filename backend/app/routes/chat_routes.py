@@ -28,6 +28,14 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+@router.get("/history/{appointment_id}")
+async def get_chat_history(appointment_id: str):
+    db = get_db()
+    chats = await db.chats.find({"appointment_id": appointment_id}).to_list(1000)
+    for chat in chats:
+        chat["_id"] = str(chat["_id"])
+    return chats
+
 @router.websocket("/ws/chat/{appointment_id}")
 async def websocket_endpoint(websocket: WebSocket, appointment_id: str):
     await manager.connect(websocket, appointment_id)
@@ -55,6 +63,10 @@ async def websocket_endpoint(websocket: WebSocket, appointment_id: str):
                         from datetime import timedelta
                         end_dt = start_dt + timedelta(minutes=30)
                         
+                    if appt.get("status") == "completed":
+                        await websocket.send_text(json.dumps({"error": "This session has been explicitly ended."}))
+                        continue
+
                     if not (start_dt <= now <= end_dt):
                         await websocket.send_text(json.dumps({"error": "Communication is only allowed during the appointment window."}))
                         continue

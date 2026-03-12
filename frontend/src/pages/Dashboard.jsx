@@ -51,6 +51,17 @@ const Dashboard = () => {
         fetchSlots();
     };
 
+    const deleteSlot = async (slotId) => {
+        try {
+            if (window.confirm("Are you sure you want to delete this slot?")) {
+                await api.delete(`/doctor/slots/${slotId}`);
+                fetchSlots();
+            }
+        } catch (err) {
+            alert('Cannot delete slot. It might already be booked.');
+        }
+    };
+
     const fetchApprovedDoctors = async () => {
         const query = selectedSpec ? `?specialization=${selectedSpec}` : '';
         const res = await api.get(`/patient/doctors${query}`);
@@ -84,6 +95,12 @@ const Dashboard = () => {
         }
     }
 
+    const viewPDF = (url) => {
+        const fixedUrl = url.replace(/\\/g, '/');
+        // We use the disguised API endpoint to avoid IDM reading the .pdf extension
+        window.open(`http://localhost:8000/api/prescriptions/view?file_url=${fixedUrl}`, '_blank');
+    };
+
     return (
         <div>
             <h2>Welcome to Dashboard, {user?.name} ({user.role})</h2>
@@ -101,7 +118,7 @@ const Dashboard = () => {
                                     >
                                         <option value="">All Specializations</option>
                                         {specializations.map(spec => (
-                                            <option key={spec} value={spec}>{spec}</option>
+                                            <option key={spec.value || spec} value={spec.value || spec}>{spec.display || spec}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -125,8 +142,11 @@ const Dashboard = () => {
                                         {a.status === 'confirmed' && (
                                             <>
                                                 <button onClick={() => navigate(`/chat/${a._id}`)} style={{ width: 'auto', marginRight: '5px' }}>Go to Chat</button>
-                                                <button onClick={() => setReview({ ...review, appointment_id: a._id })} style={{ width: 'auto', background: '#28a745' }}>Write Review</button>
+                                                <button onClick={() => setReview({ ...review, appointment_id: a._id })} style={{ width: 'auto', background: '#28a745', marginRight: '5px' }}>Write Review</button>
                                             </>
+                                        )}
+                                        {a.prescription_url && (
+                                            <button onClick={() => viewPDF(a.prescription_url)} style={{ width: 'auto', background: '#17a2b8' }}>View Prescription</button>
                                         )}
                                     </div>
                                 ))}
@@ -158,16 +178,28 @@ const Dashboard = () => {
                             </div>
                             <div className="dashboard-card">
                                 <h3>My Slots</h3>
-                                <ul>{data.map(s => <li key={s._id}>{s.date} {s.start_time} - {s.status}</li>)}</ul>
+                                <ul style={{ listStyle: 'none', padding: 0 }}>
+                                    {data.map(s => (
+                                        <li key={s._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee', padding: '10px 0' }}>
+                                            <span>{s.date} {s.start_time} - <strong style={{ color: s.status === 'booked' ? '#dc3545' : '#28a745' }}>{s.status.toUpperCase()}</strong></span>
+                                            {s.status !== 'booked' && (
+                                                <button onClick={() => deleteSlot(s._id)} style={{ width: 'auto', background: '#dc3545', padding: '5px 10px', margin: 0, fontSize: '0.8rem' }}>Delete</button>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
                             <div className="dashboard-card">
                                 <h3>My Appointments</h3>
                                 {appointments.map(a => (
                                     <div key={a._id} style={{ borderBottom: '1px solid #eee', padding: '10px 0' }}>
-                                        <p>Patient ID: {a.patient_id} | Date: {a.date} | Time: {a.start_time}</p>
+                                        <p>Patient: {a.patient_name || a.patient_id} | Date: {a.date} | Time: {a.start_time}</p>
                                         <p>Status: {a.status}</p>
                                         {a.status === 'confirmed' && (
-                                            <button onClick={() => navigate(`/chat/${a._id}`)} style={{ width: 'auto' }}>Go to Chat</button>
+                                            <button onClick={() => navigate(`/chat/${a._id}`)} style={{ width: 'auto', marginRight: '5px' }}>Go to Chat</button>
+                                        )}
+                                        {a.prescription_url && (
+                                            <button onClick={() => viewPDF(a.prescription_url)} style={{ width: 'auto', background: '#17a2b8' }}>View Prescription</button>
                                         )}
                                     </div>
                                 ))}
